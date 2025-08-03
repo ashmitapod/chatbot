@@ -51,9 +51,10 @@ export const {
       id: 'guest',
       credentials: {},
       async authorize() {
+        const timestamp = Date.now();
         const guestUser = {
-          id: 'guest_user_' + Date.now(),
-          email: null,
+          id: `guest_${timestamp}`,
+          email: `guest_${timestamp}@guest.local`,
           type: 'guest' as UserType,
         };
 

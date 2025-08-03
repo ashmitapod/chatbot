@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { isDevelopmentEnvironment } from '@/lib/constants';
+import { guestLogin } from '@/app/(auth)/actions';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,31 +9,28 @@ export async function GET(request: Request) {
 
   const token = await getToken({
     req: request,
-    secret: process.env.AUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET,
     secureCookie: !isDevelopmentEnvironment,
   });
 
   if (token) {
-    // Already authenticated, redirect to home
-    return NextResponse.redirect(new URL('/', request.url));
+    // Already authenticated, redirect to the intended URL
+    return NextResponse.redirect(new URL(redirectUrl, request.url));
   }
 
-  // Create a mock guest user session (No DB involved)
-  const guestUser = {
-    id: 'guest_' + Date.now(),
-    email: `guest_${Date.now()}@guest.local`,  // Important for token parsing
-    type: 'guest',
-  };
-
-  // Manually set a session token cookie
-  const response = NextResponse.redirect(new URL(redirectUrl, request.url));
-  response.cookies.set('next-auth.session-token', JSON.stringify(guestUser), {
-    httpOnly: true,
-    path: '/',
-    secure: !isDevelopmentEnvironment,
-  });
-
-  console.log('✅ Guest user session created:', guestUser.id);
-
-  return response;
+  try {
+    // Use the guest login action
+    const result = await guestLogin();
+    
+    if (result.status === 'success') {
+      console.log('✅ Guest user session created via action');
+      return NextResponse.redirect(new URL(redirectUrl, request.url));
+    } else {
+      console.error('Failed to create guest session');
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  } catch (error) {
+    console.error('Error during guest login:', error);
+    return NextResponse.redirect(new URL('/', request.url));
+  }
 }

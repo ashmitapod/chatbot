@@ -41,6 +41,19 @@ export const login = async (
   }
 };
 
+export const guestLogin = async (): Promise<LoginActionState> => {
+  try {
+    await signIn('guest', {
+      redirect: false,
+    });
+
+    return { status: 'success' };
+  } catch (error) {
+    console.error('Guest login failed:', error);
+    return { status: 'failed' };
+  }
+};
+
 export interface RegisterActionState {
   status:
     | 'idle'
