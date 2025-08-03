@@ -1,7 +1,6 @@
 import { compare } from 'bcrypt-ts';
 import NextAuth, { type DefaultSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { createGuestUser, getUser } from '@/lib/db/queries';
 import { authConfig } from './auth.config';
 import { DUMMY_PASSWORD } from '@/lib/constants';
 import type { DefaultJWT } from 'next-auth/jwt';
@@ -38,50 +37,29 @@ export const {
 } = NextAuth({
   ...authConfig,
   providers: [
+    // Regular login (disabled for now)
     Credentials({
       credentials: {},
       async authorize({ email, password }: any) {
-        const users = await getUser(email);
-
-        if (users.length === 0) {
-          await compare(password, DUMMY_PASSWORD);
-          return null;
-        }
-
-        const [user] = users;
-
-        if (!user.password) {
-          await compare(password, DUMMY_PASSWORD);
-          return null;
-        }
-
-        const passwordsMatch = await compare(password, user.password);
-
-        if (!passwordsMatch) return null;
-
-        return { ...user, type: 'regular' };
+        console.error('Regular login is disabled (no DB)');
+        return null;
       },
     }),
+    // Guest login (No DB)
     Credentials({
-    id: 'guest',
-    credentials: {},
-    async authorize() {
-      const guestUsers = await createGuestUser();
-      if (!guestUsers || guestUsers.length === 0) {
-        console.error('❌ Guest user creation failed');
-        return null;
-      }
+      id: 'guest',
+      credentials: {},
+      async authorize() {
+        const guestUser = {
+          id: 'guest_user_' + Date.now(),
+          email: null,
+          type: 'guest' as UserType,
+        };
 
-      const [guestUser] = guestUsers;
-
-      if (!guestUser?.id) {
-        console.error('❌ Guest user missing ID');
-        return null;
-      }
-
-      return { ...guestUser, type: 'guest' };
-    },
-  }),
+        console.log('✅ Guest user created:', guestUser.id);
+        return guestUser;
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
@@ -89,7 +67,6 @@ export const {
         token.id = user.id as string;
         token.type = user.type;
       }
-
       return token;
     },
     async session({ session, token }) {
@@ -97,8 +74,10 @@ export const {
         session.user.id = token.id;
         session.user.type = token.type;
       }
-
       return session;
     },
+  },
+  session: {
+    strategy: 'jwt',
   },
 });
