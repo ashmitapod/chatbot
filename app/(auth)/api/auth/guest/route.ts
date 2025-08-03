@@ -1,40 +1,14 @@
-import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-import { isDevelopmentEnvironment } from '@/lib/constants';
+import { NextRequest, NextResponse } from 'next/server';
+import { signIn } from '@/auth/auth'; 
+// Ensure this path is correct (alias to auth.ts or use next-auth/client)
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+export async function GET(request: NextRequest) {
+  const { searchParams } = request.nextUrl;
   const redirectUrl = searchParams.get('redirectUrl') || '/';
 
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-    secureCookie: !isDevelopmentEnvironment,
-  });
+  // Sign in with the 'guest' provider (mock guest user)
+  await signIn('guest', { redirect: false });
 
-  if (token) {
-    // Already authenticated, redirect to home
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  // Mock guest user session creation (no DB)
-  const guestUser = {
-    id: 'guest_user_' + Date.now(),
-    email: null,
-    type: 'guest',
-  };
-
-  // Create a token manually (JWT-based session)
-  const response = NextResponse.redirect(new URL(redirectUrl, request.url));
-  response.cookies.set('next-auth.session-token', JSON.stringify({
-    id: guestUser.id,
-    type: guestUser.type,
-  }), {
-    httpOnly: true,
-    path: '/',
-  });
-
-  console.log('✅ Guest user session created:', guestUser.id);
-
-  return response;
+  // Manually redirect after signIn
+  return NextResponse.redirect(redirectUrl);
 }
