@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { signIn } from '@/auth/auth'; 
+import { signIn } from '../../../../auth'; 
 // Ensure this path is correct (alias to auth.ts or use next-auth/client)
 
 export async function GET(request: NextRequest) {
