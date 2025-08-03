@@ -13,13 +13,19 @@ export async function middleware(request: NextRequest) {
     return new Response('pong', { status: 200 });
   }
 
+  // Allow Auth.js API routes to run without interference
   if (pathname.startsWith('/api/auth')) {
+    return NextResponse.next();
+  }
+
+  // Allow unauthenticated users to access the login and register pages
+  if (pathname === '/login' || pathname === '/register') {
     return NextResponse.next();
   }
 
   const token = await getToken({
     req: request,
-    secret: process.env.AUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET,
     secureCookie: !isDevelopmentEnvironment,
   });
 
