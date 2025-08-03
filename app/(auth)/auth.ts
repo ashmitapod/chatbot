@@ -35,6 +35,7 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
+  secret: process.env.NEXTAUTH_SECRET, // <--- This line has been added
   ...authConfig,
   providers: [
     // Regular login (disabled for now)
